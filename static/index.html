@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AQI Research Lab</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/style.css">
+
+    <!-- Feather Icons for clean black icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+
+<body>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="logo">AQI</div>
+        <ul class="nav-links">
+            <li class="active"><a href="/" title="Dashboard"><i data-feather="grid"></i></a></li>
+            <li><a href="/analytics.html" title="Analytics"><i data-feather="bar-chart-2"></i></a></li>
+            <li><a href="#" title="Predictions"><i data-feather="cpu"></i></a></li>
+            <li><a href="#" title="Settings"><i data-feather="settings"></i></a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="content">
+
+        <header>
+            <h1>AQI Research Lab</h1>
+            <div class="header-controls">
+                <select id="city-selector">
+                    <option value="all">Global Average</option>
+                    <!-- Populated via JS -->
+                </select>
+            </div>
+        </header>
+
+        <!-- KPI Cards -->
+        <section class="kpi-row">
+            <div class="card kpi-card">
+                <p class="kpi-title">Average AQI</p>
+                <h2 id="kpi-avg-aqi">--</h2>
+            </div>
+            <div class="card kpi-card">
+                <p class="kpi-title">Peak AQI</p>
+                <h2 id="kpi-max-aqi">--</h2>
+            </div>
+            <div class="card kpi-card">
+                <p class="kpi-title">Severe Days (>300)</p>
+                <h2 id="kpi-severe">--</h2>
+            </div>
+            <div class="card kpi-card">
+                <p class="kpi-title">Total Records Analyzed</p>
+                <h2 id="kpi-records">--</h2>
+            </div>
+        </section>
+
+        <!-- Chart and Form Layout -->
+        <div class="dashboard-grid">
+
+            <!-- Main Chart Area -->
+            <section class="card chart-container">
+                <div class="chart-header">
+                    <h3>Air Quality Trends</h3>
+                    <div class="chart-actions">
+                        <button class="btn btn-outline" onclick="loadTimeseries()">Refresh</button>
+                    </div>
+                </div>
+                <!-- Canvas for Chart.js -->
+                <div class="canvas-wrapper">
+                    <canvas id="aqiChart"></canvas>
+                </div>
+            </section>
+
+            <!-- Predictor Form -->
+            <aside class="card predictor-container">
+                <h3>AI Predictor</h3>
+                <p class="subtitle">Enter meteorological variables to forecast AQI.</p>
+
+                <form id="predict-form">
+                    <div class="form-group">
+                        <label for="t2m">Temperature (K)</label>
+                        <input type="number" step="any" id="t2m" required placeholder="e.g., 298.15">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="d2m">Dewpoint Temp (K)</label>
+                        <input type="number" step="any" id="d2m" required placeholder="e.g., 285.5">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sp">Surface Pressure (Pa)</label>
+                        <input type="number" step="any" id="sp" required placeholder="e.g., 101325">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="blh">Boundary Layer Height (m)</label>
+                        <input type="number" step="any" id="blh" required placeholder="e.g., 1000">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="wind_speed">Wind Speed (m/s)</label>
+                        <input type="number" step="any" id="wind_speed" required placeholder="e.g., 5.2">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="predict-btn">Run Prediction</button>
+                </form>
+
+                <div id="prediction-result" class="result-box hidden">
+                    <p>Estimated AQI:</p>
+                    <h2 id="predicted-aqi-value">--</h2>
+                </div>
+            </aside>
+
+        </div>
+    </main>
+
+    <script src="/script.js"></script>
+    <script>
+        feather.replace();
+    </script>
+</body>
+
+</html>

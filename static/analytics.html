@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AQI Research Lab - Analytics</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/style.css">
+
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+
+<body>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="logo">AQI</div>
+        <ul class="nav-links">
+            <li><a href="/" title="Dashboard"><i data-feather="grid"></i></a></li>
+            <li class="active"><a href="/analytics.html" title="Analytics"><i data-feather="bar-chart-2"></i></a></li>
+            <li><a href="#" title="Predictions"><i data-feather="cpu"></i></a></li>
+            <li><a href="#" title="Settings"><i data-feather="settings"></i></a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="content">
+
+        <header>
+            <h1>Advanced Analytics</h1>
+            <div class="header-controls">
+                <select id="city-selector">
+                    <option value="all">Global Average</option>
+                    <!-- Populated via JS -->
+                </select>
+            </div>
+        </header>
+
+        <!-- Analytics Grid -->
+        <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr;">
+
+            <!-- Monthly Seasonality -->
+            <section class="card chart-container" style="min-height: 400px;">
+                <div class="chart-header">
+                    <h3>Monthly Seasonality (AQI)</h3>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+            </section>
+
+            <!-- AQI Distribution -->
+            <section class="card chart-container" style="min-height: 400px;">
+                <div class="chart-header">
+                    <h3>AQI Health Distribution</h3>
+                </div>
+                <div class="canvas-wrapper" style="display: flex; justify-content: center; align-items: center;">
+                    <canvas id="distributionChart" style="max-height: 300px; max-width: 300px;"></canvas>
+                </div>
+            </section>
+
+            <!-- Feature Correlation -->
+            <section class="card chart-container" style="grid-column: 1 / -1; min-height: 400px;">
+                <div class="chart-header">
+                    <h3>Feature Correlation with AQI</h3>
+                    <p class="subtitle" style="font-size: 0.85rem; color: #86868B; margin-top: 5px;">Shows how strongly
+                        meteorological data impacts AQI.</p>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="correlationChart"></canvas>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <script src="/analytics.js"></script>
+    <script>
+        feather.replace();
+    </script>
+</body>
+
+</html>
