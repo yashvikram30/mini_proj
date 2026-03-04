@@ -211,7 +211,7 @@ class DataProcessor:
         def _train(data):
             X = data[['t2m', 'd2m', 'sp', 'blh', 'wind_speed']]
             y = data['aqi']
-            model = RandomForestRegressor(n_estimators=50, random_state=42, n_jobs=-1)
+            model = RandomForestRegressor(n_estimators=50, random_state=42, n_jobs=1)
             model.fit(X, y)
             return model
 
