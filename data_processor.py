@@ -19,7 +19,8 @@ class DataProcessor:
     def load_and_clean_data(self):
         """Loads data, handles missing values, and calculates required features."""
         if not os.path.exists(self.data_path):
-            print(f"Warning: Data file {self.data_path} not found.")
+            self._load_error = f"Data file not found: {self.data_path}"
+            print(f"Warning: {self._load_error}")
             return
             
         try:
@@ -32,11 +33,18 @@ class DataProcessor:
             if 'date' in df.columns:
                 df['date'] = pd.to_datetime(df['date'])
                 
-            # Group by city and fill missing values using linear interpolation
+            # Fill missing values per city using interpolation
+            # (pandas 2.2+ compatible — avoids groupby().apply(interpolate))
             if 'city' in df.columns and 'date' in df.columns:
                 df = df.sort_values(by=['city', 'date'])
-                df = df.groupby('city', group_keys=False).apply(lambda group: group.interpolate(method='linear'))
-                df = df.groupby('city', group_keys=False).apply(lambda group: group.ffill().bfill())
+                numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+                
+                filled_parts = []
+                for city_name, group in df.groupby('city'):
+                    group[numeric_cols] = group[numeric_cols].interpolate(method='linear')
+                    group = group.ffill().bfill()
+                    filled_parts.append(group)
+                df = pd.concat(filled_parts, ignore_index=True)
                 
             # Feature Engineering: 
             # Calculate wind_speed = sqrt(u10² + v10²)
@@ -44,8 +52,10 @@ class DataProcessor:
                 df['wind_speed'] = np.sqrt(df['u10']**2 + df['v10']**2)
                 
             self.df = df
-            print("Data loaded and cleaned successfully.")
+            self._load_error = None
+            print(f"Data loaded: {len(df)} rows, columns: {list(df.columns)}")
         except Exception as e:
+            self._load_error = str(e)
             print(f"Error loading data: {e}")
             
     def get_summary_stats(self, city: str = "all"):

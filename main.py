@@ -52,11 +52,13 @@ def health():
         "status": "ok" if processor else ("error" if _init_error else "loading"),
         "init_error": _init_error,
         "processor_ready": processor is not None,
+        "data_loaded": processor.df is not None if processor else False,
+        "data_rows": len(processor.df) if processor and processor.df is not None else 0,
+        "data_load_error": getattr(processor, '_load_error', None) if processor else None,
         "cwd": cwd,
         "script_dir": script_dir,
         "csv_in_cwd": csv_in_cwd,
         "csv_in_script_dir": csv_in_script_dir,
-        "files_in_script_dir": [os.path.basename(f) for f in all_files],
     }
 
 # ── Root ────────────────────────────────────────────────────────────
