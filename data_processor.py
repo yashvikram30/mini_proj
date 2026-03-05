@@ -3,11 +3,16 @@ import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 import os
 
+# Resolve paths relative to THIS file, not the working directory
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 class DataProcessor:
-    def __init__(self, data_path="aqi_era5_daily_2015_2019_clean.csv"):
+    def __init__(self, data_path=None):
+        if data_path is None:
+            data_path = os.path.join(BASE_DIR, "aqi_era5_daily_2015_2019_clean.csv")
         self.data_path = data_path
         self.df = None
-        self.rf_model = None
+        self.rf_models = {}
         self.load_and_clean_data()
         self.train_model()
         

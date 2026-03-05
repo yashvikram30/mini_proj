@@ -39,28 +39,38 @@ async function fetchCities() {
     }
 }
 
-async function fetchSummary(city = 'all') {
+async function fetchSummary(city = 'all', retries = 5) {
     try {
         const response = await fetch(`${API_BASE}/summary/${city}`);
-        const data = await response.json();
 
-        if (data.error) {
-            console.error(data.error);
+        // If server is still loading data, retry after a short delay
+        if (response.status === 503 && retries > 0) {
+            console.log("Server still loading, retrying...");
+            setTimeout(() => fetchSummary(city, retries - 1), 3000);
             return;
         }
 
-        // Animate numbers optionally, or just set them
-        document.getElementById('kpi-avg-aqi').innerText = data.avg_aqi;
-        document.getElementById('kpi-max-aqi').innerText = data.max_aqi;
-        document.getElementById('kpi-severe').innerText = data.severe_days.toLocaleString();
-        document.getElementById('kpi-records').innerText = data.total_records.toLocaleString();
+        if (!response.ok) {
+            console.error("Summary API error:", response.status);
+            return;
+        }
+
+        const data = await response.json();
+
+        document.getElementById('kpi-avg-aqi').innerText = data.avg_aqi ?? '--';
+        document.getElementById('kpi-max-aqi').innerText = data.max_aqi ?? '--';
+        document.getElementById('kpi-severe').innerText = data.severe_days?.toLocaleString() ?? '--';
+        document.getElementById('kpi-records').innerText = data.total_records?.toLocaleString() ?? '--';
 
     } catch (err) {
         console.error("Failed to fetch summary:", err);
+        if (retries > 0) {
+            setTimeout(() => fetchSummary(city, retries - 1), 3000);
+        }
     }
 }
 
-async function loadTimeseries() {
+async function loadTimeseries(retries = 5) {
     const city = document.getElementById('city-selector').value;
 
     // Fetch the summary for the specific city and update the KPIs
@@ -68,14 +78,24 @@ async function loadTimeseries() {
 
     try {
         const response = await fetch(`${API_BASE}/timeseries/${city}`);
+
+        if (response.status === 503 && retries > 0) {
+            setTimeout(() => loadTimeseries(retries - 1), 3000);
+            return;
+        }
+
+        if (!response.ok) return;
+
         const data = await response.json();
-
-        if (data.error) throw new Error(data.error);
-
-        renderChart(data.dates, data.aqi);
+        if (data.dates && data.aqi) {
+            renderChart(data.dates, data.aqi);
+        }
 
     } catch (err) {
         console.error("Failed to load timeseries:", err);
+        if (retries > 0) {
+            setTimeout(() => loadTimeseries(retries - 1), 3000);
+        }
     }
 }
 
