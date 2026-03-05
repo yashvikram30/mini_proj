@@ -1,27 +1,34 @@
 import os
-from contextlib import asynccontextmanager
+import threading
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# Lazy-load processor so the server binds to PORT before heavy ML training
+# ── Background initialization ──────────────────────────────────────
+# The server MUST bind to $PORT instantly. Heavy data loading and
+# ML model training runs in a background thread so Railway's health
+# check passes immediately.
+
 processor = None
+_init_error = None
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Load data and train models AFTER the server starts listening."""
-    global processor
-    from data_processor import DataProcessor
-    processor = DataProcessor()
-    print("Application startup complete.")
-    yield
-    print("Application shutdown.")
+def _init_processor():
+    global processor, _init_error
+    try:
+        from data_processor import DataProcessor
+        processor = DataProcessor()
+        print("✅ Processor ready — all models trained.")
+    except Exception as e:
+        _init_error = str(e)
+        print(f"❌ Processor init failed: {e}")
 
-app = FastAPI(title="AQI Research Lab API", lifespan=lifespan)
+threading.Thread(target=_init_processor, daemon=True).start()
 
-# Enable CORS for local dev
+# ── App ─────────────────────────────────────────────────────────────
+app = FastAPI(title="AQI Research Lab API")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -30,23 +37,40 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Root endpoint acts as entry point for index.html
+# ── Health check (Railway pings this) ───────────────────────────────
+@app.get("/health")
+def health():
+    if _init_error:
+        return JSONResponse({"status": "error", "detail": _init_error}, status_code=500)
+    if processor is None:
+        return JSONResponse({"status": "loading"}, status_code=200)
+    return {"status": "ok"}
+
+# ── Root ────────────────────────────────────────────────────────────
 @app.get("/")
 def read_root():
     return FileResponse("static/index.html")
 
-# Define request model for predictions
+# ── Models ──────────────────────────────────────────────────────────
 class WeatherInput(BaseModel):
-    t2m: float  # Temperature (K)
-    d2m: float  # Dewpoint Temp (K)
-    sp: float   # Surface Pressure (Pa)
-    blh: float  # Boundary Layer Height (m)
+    t2m: float
+    d2m: float
+    sp: float
+    blh: float
     wind_speed: float
-    city: str = 'all' # Optional city for customized prediction
+    city: str = "all"
 
+# ── Helper: guard against requests before processor is ready ───────
+def _require_processor():
+    if _init_error:
+        raise HTTPException(status_code=500, detail=f"Startup error: {_init_error}")
+    if processor is None:
+        raise HTTPException(status_code=503, detail="Server is still loading data. Please retry in a few seconds.")
+
+# ── API Endpoints ───────────────────────────────────────────────────
 @app.get("/api/summary/{city}")
 def get_summary(city: str):
-    """Returns top-level stats (Avg AQI, etc.) filtered by optional city."""
+    _require_processor()
     stats = processor.get_summary_stats(city)
     if "error" in stats:
         raise HTTPException(status_code=500, detail=stats["error"])
@@ -54,12 +78,12 @@ def get_summary(city: str):
 
 @app.get("/api/cities")
 def get_cities():
-    """Returns list of available cities."""
+    _require_processor()
     return {"cities": processor.get_cities()}
 
 @app.get("/api/timeseries/{city}")
 def get_timeseries(city: str):
-    """Returns daily AQI and meteorological data for Chart.js."""
+    _require_processor()
     data = processor.get_timeseries(city)
     if "error" in data:
         raise HTTPException(status_code=404, detail=data["error"])
@@ -67,6 +91,7 @@ def get_timeseries(city: str):
 
 @app.get("/api/analytics/{city}/monthly")
 def get_analytics_monthly(city: str):
+    _require_processor()
     data = processor.get_monthly_seasonality(city)
     if "error" in data:
         raise HTTPException(status_code=404, detail=data["error"])
@@ -74,6 +99,7 @@ def get_analytics_monthly(city: str):
 
 @app.get("/api/analytics/{city}/distribution")
 def get_analytics_distribution(city: str):
+    _require_processor()
     data = processor.get_aqi_distribution(city)
     if "error" in data:
         raise HTTPException(status_code=404, detail=data["error"])
@@ -81,6 +107,7 @@ def get_analytics_distribution(city: str):
 
 @app.get("/api/analytics/{city}/correlation")
 def get_analytics_correlation(city: str):
+    _require_processor()
     data = processor.get_correlation(city)
     if "error" in data:
         raise HTTPException(status_code=404, detail=data["error"])
@@ -88,7 +115,7 @@ def get_analytics_correlation(city: str):
 
 @app.post("/api/predict")
 def predict_aqi(input_data: WeatherInput):
-    """A POST endpoint that takes weather variables and returns an AQI prediction."""
+    _require_processor()
     try:
         prediction = processor.predict_aqi(
             t2m=input_data.t2m,
@@ -96,12 +123,11 @@ def predict_aqi(input_data: WeatherInput):
             sp=input_data.sp,
             blh=input_data.blh,
             wind_speed=input_data.wind_speed,
-            city=input_data.city
+            city=input_data.city,
         )
         return {"predicted_aqi": prediction, "model_used": input_data.city}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Mount static files *after* explicit routes using prefix /static (or just mount the directory for relative imports)
-# It's better to structure standard static mounting this way:
+# ── Static files (must be LAST) ────────────────────────────────────
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
