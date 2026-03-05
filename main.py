@@ -37,14 +37,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Health check (Railway pings this) ───────────────────────────────
+# ── Diagnostic endpoint (shows what's happening on Railway) ─────────
 @app.get("/health")
 def health():
-    if _init_error:
-        return JSONResponse({"status": "error", "detail": _init_error}, status_code=500)
-    if processor is None:
-        return JSONResponse({"status": "loading"}, status_code=200)
-    return {"status": "ok"}
+    import glob
+    cwd = os.getcwd()
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    csv_name = "aqi_era5_daily_2015_2019_clean.csv"
+    csv_in_cwd = os.path.exists(os.path.join(cwd, csv_name))
+    csv_in_script_dir = os.path.exists(os.path.join(script_dir, csv_name))
+    all_files = glob.glob(os.path.join(script_dir, "*"))
+
+    return {
+        "status": "ok" if processor else ("error" if _init_error else "loading"),
+        "init_error": _init_error,
+        "processor_ready": processor is not None,
+        "cwd": cwd,
+        "script_dir": script_dir,
+        "csv_in_cwd": csv_in_cwd,
+        "csv_in_script_dir": csv_in_script_dir,
+        "files_in_script_dir": [os.path.basename(f) for f in all_files],
+    }
 
 # ── Root ────────────────────────────────────────────────────────────
 @app.get("/")
