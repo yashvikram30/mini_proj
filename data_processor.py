@@ -250,5 +250,3 @@ class DataProcessor:
         prediction = model.predict(X_new)[0]
         return round(float(prediction), 2)
 
-# Global instance
-processor = DataProcessor()
