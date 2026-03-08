@@ -204,6 +204,69 @@ class DataProcessor:
             "values": aqi_corr.tolist()
         }
 
+    def get_raw_data(self, city: str = "all", page: int = 1, per_page: int = 50, search: str = ""):
+        """Returns paginated raw data for the data table view."""
+        if self.df is None or self.df.empty:
+            return {"error": "Data not available"}
+
+        target_df = self.df.copy()
+
+        # Filter by city
+        if city.lower() != "all" and 'city' in target_df.columns:
+            target_df = target_df[target_df['city'].str.lower() == city.lower()]
+
+        if target_df.empty:
+            return {"error": f"No data found for city: {city}"}
+
+        # Format date column for display
+        if 'date' in target_df.columns:
+            target_df['date'] = target_df['date'].dt.strftime('%Y-%m-%d')
+
+        # Search filter across all string representations
+        if search.strip():
+            mask = target_df.astype(str).apply(
+                lambda row: row.str.contains(search.strip(), case=False, na=False).any(), axis=1
+            )
+            target_df = target_df[mask]
+
+        total_rows = len(target_df)
+        total_pages = max(1, (total_rows + per_page - 1) // per_page)
+        page = max(1, min(page, total_pages))
+
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        page_df = target_df.iloc[start_idx:end_idx]
+
+        # Round numeric columns to 2 decimals for clean display
+        numeric_cols = page_df.select_dtypes(include=[np.number]).columns
+        page_df[numeric_cols] = page_df[numeric_cols].round(2)
+
+        # Column display name mapping
+        col_labels = {
+            'date': 'Date', 'city': 'City', 'aqi': 'AQI', 'aqi_bucket': 'AQI Category',
+            't2m': 'Temp (K)', 'd2m': 'Dewpoint (K)', 'sp': 'Pressure (Pa)',
+            'blh': 'BL Height (m)', 'u10': 'U Wind (m/s)', 'v10': 'V Wind (m/s)',
+            'wind_speed': 'Wind Speed (m/s)', 'pm2.5': 'PM2.5', 'pm10': 'PM10',
+            'no': 'NO', 'no2': 'NO₂', 'nox': 'NOx', 'nh3': 'NH₃',
+            'co': 'CO', 'so2': 'SO₂', 'o3': 'O₃'
+        }
+
+        columns = page_df.columns.tolist()
+        display_columns = [col_labels.get(c, c) for c in columns]
+
+        # Convert NaN to None for JSON compatibility
+        rows = page_df.where(page_df.notna(), None).values.tolist()
+
+        return {
+            "columns": columns,
+            "display_columns": display_columns,
+            "rows": rows,
+            "total_rows": total_rows,
+            "total_pages": total_pages,
+            "current_page": page,
+            "per_page": per_page
+        }
+
     def train_model(self):
         """Trains RandomForestRegressors for predicting AQI per city and globally."""
         if self.df is None or self.df.empty:

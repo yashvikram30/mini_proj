@@ -1,6 +1,6 @@
 import os
 import threading
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -124,6 +124,19 @@ def get_analytics_distribution(city: str):
 def get_analytics_correlation(city: str):
     _require_processor()
     data = processor.get_correlation(city)
+    if "error" in data:
+        raise HTTPException(status_code=404, detail=data["error"])
+    return data
+
+@app.get("/api/rawdata")
+def get_raw_data(
+    city: str = Query("all"),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=10, le=200),
+    search: str = Query("")
+):
+    _require_processor()
+    data = processor.get_raw_data(city=city, page=page, per_page=per_page, search=search)
     if "error" in data:
         raise HTTPException(status_code=404, detail=data["error"])
     return data

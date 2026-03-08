@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AQI Research Lab - Raw Data</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+
+<body>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="logo">AQI</div>
+        <ul class="nav-links">
+            <li><a href="/" title="Dashboard"><i data-feather="grid"></i></a></li>
+            <li><a href="/analytics.html" title="Analytics"><i data-feather="bar-chart-2"></i></a></li>
+            <li class="active"><a href="/rawdata.html" title="Raw Data"><i data-feather="database"></i></a></li>
+            <li><a href="#" title="Settings"><i data-feather="settings"></i></a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="content">
+
+        <header>
+            <h1>Raw Data Explorer</h1>
+            <div class="header-controls">
+                <select id="city-selector">
+                    <option value="all">All Cities</option>
+                    <!-- Populated via JS -->
+                </select>
+            </div>
+        </header>
+
+        <!-- Info Bar -->
+        <section class="table-info-bar">
+            <div class="table-info-left">
+                <span class="table-badge" id="total-records-badge">— records</span>
+                <span class="table-badge table-badge-outline" id="page-info-badge">Page —</span>
+            </div>
+            <div class="table-info-right">
+                <div class="search-wrapper">
+                    <i data-feather="search" class="search-icon"></i>
+                    <input type="text" id="search-input" placeholder="Search across all fields…" />
+                </div>
+            </div>
+        </section>
+
+        <!-- Data Table -->
+        <section class="card table-card">
+            <div class="table-scroll">
+                <table class="data-table" id="data-table">
+                    <thead id="table-head"></thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div class="table-empty hidden" id="table-empty">
+                <i data-feather="inbox" style="width: 40px; height: 40px; color: #86868B;"></i>
+                <p>No records found</p>
+            </div>
+        </section>
+
+        <!-- Pagination -->
+        <section class="pagination-bar">
+            <button class="btn btn-outline pagination-btn" id="btn-prev" disabled>
+                <i data-feather="chevron-left" style="width: 16px; height: 16px;"></i>
+                Previous
+            </button>
+            <span class="pagination-text" id="pagination-text">Page 1 of 1</span>
+            <button class="btn btn-outline pagination-btn" id="btn-next" disabled>
+                Next
+                <i data-feather="chevron-right" style="width: 16px; height: 16px;"></i>
+            </button>
+        </section>
+
+    </main>
+
+    <script src="/rawdata.js"></script>
+    <script>
+        feather.replace();
+    </script>
+</body>
+
+</html>
